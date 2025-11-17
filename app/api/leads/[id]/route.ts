@@ -3,9 +3,9 @@ import { supabaseAdmin, requireUser } from "@/lib/supabaseAdmin";
 import { leadStatuses, type LeadStatus } from "@/types/lead";
 
 type RouteParams = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 function validateStatus(status?: string | null): LeadStatus | undefined {
@@ -22,7 +22,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   const body = await req.json();
   const { name, email, phone, source, status } = body ?? {};
 
@@ -64,7 +64,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   const { error: dbError } = await supabaseAdmin
     .from("leads")
     .delete()
