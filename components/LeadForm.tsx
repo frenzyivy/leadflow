@@ -45,7 +45,10 @@ export default function LeadForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (field: keyof LeadPayload, value: string) => {
+  const handleChange = (
+    field: keyof LeadPayload,
+    value: string | undefined,
+  ) => {
     setFormState((prev) => ({ ...prev, [field]: value }));
   };
 
