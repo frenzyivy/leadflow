@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin, requireUser } from "@/lib/supabaseAdmin";
-import { leadStatuses, type LeadStatus } from "@/types/lead";
+import { buildLeadPayload } from "@/lib/leadPayload";
+import type { Lead } from "@/types/lead";
 
 type RouteParams = {
   params: Promise<{
@@ -8,12 +9,27 @@ type RouteParams = {
   }>;
 };
 
-function validateStatus(status?: string | null): LeadStatus | undefined {
-  if (!status) return undefined;
-  if (leadStatuses.includes(status as LeadStatus)) {
-    return status as LeadStatus;
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  const { user, error } = await requireUser(req);
+  if (error || !user) {
+    return NextResponse.json({ error }, { status: 401 });
   }
-  return undefined;
+
+  const { id } = await params;
+  const { data, error: dbError } = await supabaseAdmin
+    .from("leads")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (dbError) {
+    return NextResponse.json(
+      { error: dbError.message },
+      { status: dbError.code === "PGRST116" ? 404 : 500 },
+    );
+  }
+
+  return NextResponse.json(data);
 }
 
 export async function PUT(req: NextRequest, { params }: RouteParams) {
@@ -23,26 +39,22 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   }
 
   const { id } = await params;
-  const body = await req.json();
-  const { name, email, phone, source, status } = body ?? {};
+  const body = ((await req.json()) ?? {}) as Partial<Lead>;
+  const payload = buildLeadPayload(body);
+  const hasPrimaryContact =
+    Boolean(payload.first_name) || Boolean(payload.emails?.length);
 
-  if (!name || !email || !phone || !source) {
+  if (!hasPrimaryContact) {
     return NextResponse.json(
-      { error: "Missing required fields" },
+      { error: "First name or an email address is required." },
       { status: 400 },
     );
   }
 
-  const leadStatus = validateStatus(status);
-
   const { data, error: dbError } = await supabaseAdmin
     .from("leads")
     .update({
-      name,
-      email,
-      phone,
-      source,
-      ...(leadStatus ? { status: leadStatus } : {}),
+      ...payload,
     })
     .eq("id", id)
     .select()

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import LeadTable from "@/components/LeadTable";
-import LeadForm from "@/components/LeadForm";
 import type { Lead } from "@/types/lead";
 
 export default function DashboardPage() {
@@ -12,7 +11,6 @@ export default function DashboardPage() {
   const { session, loading } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [fetching, setFetching] = useState(true);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,17 +69,9 @@ export default function DashboardPage() {
         throw new Error(payload.error ?? "Unable to delete lead");
       }
       setLeads((prev) => prev.filter((item) => item.id !== lead.id));
-      setSelectedLead(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Unable to delete lead");
     }
-  };
-
-  const handleUpdate = (lead: Lead) => {
-    setLeads((prev) =>
-      prev.map((item) => (item.id === lead.id ? lead : item)),
-    );
-    setSelectedLead(null);
   };
 
   const summary = useMemo(() => {
@@ -128,7 +118,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <button
-              onClick={() => router.push("/add-lead")}
+              onClick={() => router.push("/dashboard/leads/new")}
               className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
             >
               Add lead
@@ -137,37 +127,8 @@ export default function DashboardPage() {
           {error ? <p className="text-sm text-rose-600">{error}</p> : null}
         </div>
 
-        <LeadTable
-          leads={leads}
-          loading={fetching}
-          onEdit={setSelectedLead}
-          onDelete={handleDelete}
-        />
+        <LeadTable leads={leads} loading={fetching} onDelete={handleDelete} />
       </section>
-
-      {selectedLead ? (
-        <section className="card">
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold">Edit lead</h2>
-              <p className="text-sm text-slate-500">{selectedLead.name}</p>
-            </div>
-            <button
-              onClick={() => setSelectedLead(null)}
-              className="text-sm font-semibold text-slate-500 hover:text-slate-700"
-            >
-              Close
-            </button>
-          </div>
-          <LeadForm
-            accessToken={accessToken}
-            initialValues={selectedLead}
-            mode="edit"
-            onSuccess={handleUpdate}
-            onCancel={() => setSelectedLead(null)}
-          />
-        </section>
-      ) : null}
     </div>
   );
 }

@@ -1,13 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin, requireUser } from "@/lib/supabaseAdmin";
-import { leadStatuses, type LeadStatus } from "@/types/lead";
-
-function validateStatus(status?: string | null): LeadStatus {
-  if (status && leadStatuses.includes(status as LeadStatus)) {
-    return status as LeadStatus;
-  }
-  return "New";
-}
+import { buildLeadPayload } from "@/lib/leadPayload";
+import type { Lead } from "@/types/lead";
 
 export async function GET(req: NextRequest) {
   const { user, error } = await requireUser(req);
@@ -36,26 +30,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error }, { status: 401 });
   }
 
-  const body = await req.json();
-  const { name, email, phone, source, status } = body ?? {};
+  const body = ((await req.json()) ?? {}) as Partial<Lead>;
+  const payload = buildLeadPayload(body);
+  const hasPrimaryContact =
+    Boolean(payload.first_name) || Boolean(payload.emails?.length);
 
-  if (!name || !email || !phone || !source) {
+  if (!hasPrimaryContact) {
     return NextResponse.json(
-      { error: "Missing required fields" },
+      { error: "First name or an email address is required." },
       { status: 400 },
     );
   }
 
-  const leadStatus = validateStatus(status);
+  if (!payload.status) {
+    payload.status = "New";
+  }
 
   const { data, error: dbError } = await supabaseAdmin
     .from("leads")
     .insert({
-      name,
-      email,
-      phone,
-      source,
-      status: leadStatus,
+      ...payload,
     })
     .select()
     .single();

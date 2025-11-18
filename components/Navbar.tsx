@@ -6,7 +6,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/add-lead", label: "Add Lead" },
+  { href: "/dashboard/leads/new", label: "New Lead" },
 ];
 
 export default function Navbar() {
