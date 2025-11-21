@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) {
@@ -117,12 +118,36 @@ export default function DashboardPage() {
                 Track every lead from capture to conversion.
               </p>
             </div>
-            <button
-              onClick={() => router.push("/dashboard/leads/new")}
-              className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
-            >
-              Add lead
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((prev) => !prev)}
+                className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
+              >
+                Add lead
+              </button>
+              {menuOpen ? (
+                <div className="absolute right-0 z-20 mt-2 w-48 rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-lg">
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push("/dashboard/leads/new");
+                    }}
+                    className="block w-full rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50"
+                  >
+                    Manual entry
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push("/dashboard/leads/import");
+                    }}
+                    className="mt-1 block w-full rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50"
+                  >
+                    Import CSV
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
           {error ? <p className="text-sm text-rose-600">{error}</p> : null}
         </div>
